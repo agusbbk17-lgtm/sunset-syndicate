@@ -21,6 +21,7 @@ export class ThirdPersonCameraRig {
   beginTransition(from, to, duration = .35) {
     this.transition = { from: from.clone(), to: to.clone(), elapsed: 0, duration };
   }
+  beginOpening() { this.opening = 0; }
   update(dt, game) {
     const player = game.player, input = game.input, preset = CAMERA_PRESETS[this.preset];
     this.previous.copy(this.position); this.previousTarget.copy(this.target);
@@ -65,6 +66,14 @@ export class ThirdPersonCameraRig {
     const desired = desiredPivot.clone().addScaledVector(direction, -distance).addScaledVector(right, shoulder);
     desired.y += .4 + Math.sin(this.pitch) * distance - (player.vehicle?.braking || 0) * .16;
     desired.y = Math.max(game.world.heightAt(desired.x, desired.z) + .3, desired.y);
+    if (this.opening !== undefined && player.vehicle) {
+      this.opening += dt;
+      const t = clamp(this.opening / 4, 0, 1), blend = t * t * (3 - 2 * t);
+      const sweep = player.position.clone().addScaledVector(right, 12 * (1 - blend)).addScaledVector(direction, -10);
+      sweep.y += 6;
+      desired.lerpVectors(sweep, desired, blend);
+      if (t === 1) this.opening = undefined;
+    }
     const cinematicPose = player.vehicle ? game.vehicleCinematic?.pose(dt, player.vehicle, this) : null;
     if (cinematicPose) { desired.copy(cinematicPose.position); this.mode = 'cinematic'; }
     const lookTarget = cinematicPose?.target || desiredPivot.clone().addScaledVector(direction, this.aimBlend * 3);
@@ -100,6 +109,9 @@ export class ThirdPersonCameraRig {
     }
     this.camera.fov = this.fov; this.camera.updateProjectionMatrix();
   }
-  reset(player) { this.initialized = false; this.yaw = player.heading; this.pitch = .1; this.transition = null; }
+  reset(player) {
+    this.initialized = false; this.yaw = player.heading; this.pitch = .1;
+    this.transition = null; this.opening = undefined; this.trauma = 0; this.cinematic = false;
+  }
   get debug() { return { mode: this.mode, preset: CAMERA_PRESETS[this.preset].name, distance: this.distance, fov: this.fov, collisionHits: this.collisionHits }; }
 }

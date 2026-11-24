@@ -33,11 +33,13 @@ export class PlayerInput {
   sampleGamepad(dt) {
     this.padX = 0; this.padY = 0; this.padThrottle = 0; this.padBrake = 0;
     const pad = navigator.getGamepads?.()[0];
-    if (!pad || !this.enabled) return;
+    if (!pad) return;
     const deadzone = value => Math.abs(value) < .14 ? 0 : value;
     this.padX = deadzone(pad.axes[0] || 0); this.padY = deadzone(pad.axes[1] || 0);
-    this.lookX += deadzone(pad.axes[2] || 0) * dt * 2.2;
-    this.lookY += deadzone(pad.axes[3] || 0) * dt * 1.8;
+    if (this.enabled) {
+      this.lookX += deadzone(pad.axes[2] || 0) * dt * 2.2;
+      this.lookY += deadzone(pad.axes[3] || 0) * dt * 1.8;
+    }
     this.padThrottle = pad.buttons[7]?.value || 0;
     this.padBrake = pad.buttons[6]?.value || 0;
     const mapping = { 0: 'Space', 1: 'KeyC', 2: 'KeyE', 3: 'KeyV', 4: 'KeyQ', 5: 'KeyX', 8: 'KeyM', 9: 'Escape', 10: 'ShiftLeft' };

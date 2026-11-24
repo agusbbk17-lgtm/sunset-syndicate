@@ -62,6 +62,9 @@ export function resolveVehicleWorld(car, collision, dx, dz) {
       }
     }
   }
+  if (car.position.x < -730 || car.position.x > 235) car.velocity.x = 0;
+  if (Math.abs(car.position.z) > 730) car.velocity.z = 0;
   car.position.x = clamp(car.position.x, -730, 235); car.position.z = clamp(car.position.z, -730, 730);
+  car.speed = car.velocity.x * Math.sin(car.heading) + car.velocity.z * Math.cos(car.heading);
   return impact;
 }

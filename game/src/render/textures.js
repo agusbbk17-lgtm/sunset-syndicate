@@ -4,7 +4,7 @@ export class ProceduralTextures {
   canvas(name, width, height, draw) {
     if (this.cache.has(name)) return this.cache.get(name);
     const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
-    draw(canvas.getContext('2d'), width, height);
+    draw(canvas.getContext('2d', { willReadFrequently: true }), width, height);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = 4;
