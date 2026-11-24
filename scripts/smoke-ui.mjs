@@ -1,5 +1,22 @@
 import assert from 'node:assert/strict';
 export async function checkInterface(page) {
+  // Timestamped bridge: every round trip into the page is logged, so a slow software
+  // rasteriser can be told apart from a real hang.
+  let last = Date.now();
+  const stamp = label => {
+    const now = Date.now();
+    console.log(`[ui] ${label} +${((now - last) / 1000).toFixed(1)}s`);
+    last = now;
+  };
+  const short = fn => (fn.name || String(fn).replace(/\s+/g, ' ')).slice(0, 44);
+  const raw = {
+    evaluate: page.evaluate.bind(page),
+    waitForFunction: page.waitForFunction.bind(page),
+    press: page.keyboard.press.bind(page.keyboard),
+  };
+  page.evaluate = async (fn, arg) => { const result = await raw.evaluate(fn, arg); stamp(`eval ${short(fn)}`); return result; };
+  page.waitForFunction = async (fn, arg, options) => { const result = await raw.waitForFunction(fn, arg, options); stamp(`wait ${short(fn)}`); return result; };
+  page.keyboard.press = async key => { const result = await raw.press(key); stamp(`key ${key}`); return result; };
   const click = selector => page.evaluate(selector => document.querySelector(selector).click(), selector);
   const value = (id, value) => page.evaluate(({ id, value }) => {
     const field = document.getElementById(`setting-${id}`);
@@ -20,7 +37,9 @@ export async function checkInterface(page) {
     preset: window.__game.cameraRig.preset, master: window.__game.audio.master.gain.value }));
   assert.equal(settings.fov, 72); assert.equal(settings.sensitivity, 1.4); assert.equal(settings.preset, 2);
   assert.equal(settings.reduceMotion, true); assert.equal(settings.volume, .25); assert.equal(settings.quality, 'low');
-  await value('quality', 'med'); await value('reduceMotion', false);
+  // The quality slider is verified by the snapshot above. This run stays on the cheapest
+  // preset here; the four presets are rebuilt and rendered in the dedicated sweep phase.
+  await value('reduceMotion', false);
   await click('#screen-settings [data-action="back"]');
   await click('#screen-pause [data-action="map"]');
   console.log('Smoke UI: map');

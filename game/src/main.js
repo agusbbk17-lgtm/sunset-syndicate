@@ -87,17 +87,41 @@ function bootSunsetSyndicate() {
       gear: game.player.vehicle.gear, rpm: game.player.vehicle.rpm } : null,
     entities: game.entities.count, buildings: game.world.buildings.count });
   game.shots = new DeterministicShotDirector(game);
-  game.shots.registerPose('onfoot', g => {
+  // Poses place the hero car themselves so a shot's framing is decided in one place;
+  // the hook only seats the player, after the pose has moved the car.
+  const placeHeroCar = (g, x, z, heading, speed = 0) => {
+    const y = g.world.heightAt(x, z);
+    g.heroCar.position.set(x, y, z); g.heroCar.previous.copy(g.heroCar.position);
+    g.heroCar.heading = g.heroCar.previousHeading = heading;
+    g.heroCar.velocity.set(Math.sin(heading) * speed, 0, Math.cos(heading) * speed);
+    g.heroCar.speed = speed; g.heroCar.gear = speed > 1 ? 4 : 1; g.heroCar.rpm = 850 + speed * 118;
+  };
+  const leaveVehicle = g => {
     if (g.player.vehicle) g.player.vehicle.driver = null;
     g.player.mode = 'foot'; g.player.vehicle = null;
-    g.player.teleport(194, .15, -105, 0); g.world.sky.timeOfDay = 17.2;
+  };
+  game.shots.registerPose('onfoot', g => {
+    leaveVehicle(g); g.player.teleport(194, g.world.heightAt(194, -105), -105, 0);
+    g.world.sky.timeOfDay = 17.2;
   });
-  game.shots.registerPose('boulevard', g => { g.player.teleport(148, .15, -105, 0); g.world.sky.timeOfDay = 17.2; });
+  game.shots.registerPose('boulevard', g => { g.world.sky.timeOfDay = 17.2; placeHeroCar(g, 148, -105, 0); });
+  // The sky's sun direction is fixed, so poses choose the heading that turns the car's
+  // lit quarter towards the chase arm instead of shooting straight into the backlight.
+  game.shots.registerPose('start', g => {
+    // Cover shot: the sports car angled across Pearl Boulevard in low golden light.
+    g.world.sky.timeOfDay = 17.0; placeHeroCar(g, 150, -100, 2.4); g.cameraRig.setPreset(0);
+  });
+  game.shots.registerPose('play', g => {
+    // Mid-drive: the chase arm is stretched by speed and its yaw follows velocity.
+    g.world.sky.timeOfDay = 17.35; placeHeroCar(g, 60, -60, Math.PI / 2, 26); g.cameraRig.setPreset(1);
+  });
+  game.shots.registerPose('end', g => {
+    // Boardwalk at last light, on foot and pulled back so the coast reads in one frame.
+    g.world.sky.timeOfDay = 18.4; leaveVehicle(g);
+    g.player.teleport(198, g.world.heightAt(198, 96), 96, 1.35); g.cameraRig.setPreset(2);
+  });
   game.shots.registerHook((name, g) => {
-    if (['boulevard', 'start', 'play'].includes(name)) {
-      g.heroCar.position.set(153, .15, -105); g.heroCar.previous.copy(g.heroCar.position);
-      g.vehicles.seatPlayer(g.heroCar);
-    }
+    if (['boulevard', 'start', 'play'].includes(name)) g.vehicles.seatPlayer(g.heroCar);
   });
   window.__game = game;
   document.getElementById('boot-message').classList.add('hidden');

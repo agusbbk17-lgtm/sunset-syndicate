@@ -13,9 +13,11 @@ export class ProceduralTextures {
   }
   asphalt() {
     const texture = this.canvas('asphalt', 256, 256, (ctx, w, h) => {
-      ctx.fillStyle = '#353c40'; ctx.fillRect(0, 0, w, h);
+      // The map carries the road's own tone: the material that uses it stays near white,
+      // otherwise colour and map multiply and the surface reads as black under ACES.
+      ctx.fillStyle = '#767e83'; ctx.fillRect(0, 0, w, h);
       for (let i = 0; i < 9000; i++) {
-        const tone = this.rng.int(38, 95); ctx.fillStyle = `rgba(${tone},${tone},${tone},.24)`;
+        const tone = this.rng.int(96, 168); ctx.fillStyle = `rgba(${tone},${tone},${tone},.26)`;
         ctx.fillRect(this.rng.int(0, w), this.rng.int(0, h), 1, 1);
       }
     });
