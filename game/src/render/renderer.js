@@ -15,6 +15,7 @@ export class CityRenderer {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.info.autoReset = false;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color('#eeae82');
     this.scene.fog = new THREE.FogExp2('#eab99b', .0016);
@@ -53,6 +54,7 @@ export class CityRenderer {
   }
   render(dt, time) {
     if (this.lost) return;
+    this.renderer.info.reset();
     if (this.post && this.settings.post) this.post.render(this.scene, this.camera, time);
     else this.renderer.render(this.scene, this.camera);
   }

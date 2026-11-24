@@ -5,3 +5,4 @@ body { margin: 0; overflow: hidden; }
 #boot-message { position: fixed; inset: 0; display: grid; place-content: center; text-align: center; background: #101e29; letter-spacing: .3em; font-weight: 900; }
 #boot-message small { display: block; margin-top: 20px; letter-spacing: .1em; font-weight: 400; }
 #boot-message.hidden { display: none; }
+#camera-debug { position: fixed; top: 14px; left: 14px; background: #101e29d9; color: #adf3de; padding: 12px; font-size: 11px; line-height: 1.6; margin: 0; pointer-events: none; z-index: 40; }

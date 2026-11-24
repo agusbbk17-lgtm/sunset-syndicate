@@ -12,14 +12,14 @@ export class FixedStepLoop {
     this.frameMs = 16.7;
     this.last = null;
   }
-  step(dt = FIXED_DT) {
+  step(dt = FIXED_DT, present = true) {
     const ticks = Math.max(0, Math.round(Math.min(.25, dt) / FIXED_DT));
     for (let i = 0; i < ticks; i++) {
       this.update(FIXED_DT);
       this.time += FIXED_DT;
       this.ticks++;
     }
-    this.present(1, ticks * FIXED_DT);
+    if (present) this.present(1, ticks * FIXED_DT);
     return this.ticks;
   }
   start() {
@@ -36,7 +36,7 @@ export class FixedStepLoop {
           this.accumulator -= FIXED_DT;
         }
       } else this.accumulator = 0;
-      if (!document.hidden) this.present(this.accumulator / FIXED_DT, elapsed);
+      if (!document.hidden && !this.manual) this.present(this.paused ? 1 : this.accumulator / FIXED_DT, elapsed);
       this.frames++;
       this.handle = requestAnimationFrame(frame);
     };
