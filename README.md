@@ -49,6 +49,12 @@ node serve.ts                      # serves game/ on http://localhost:8080 (Node
 node --test tests/*.test.mjs       # unit tests: loop, rng, camera, collision, roads, save, quality, audio, vehicles
 node scripts/smoke.mjs             # browser smoke: needs the local server and a Playwright Chromium
 node main.ts                       # hand-in copy: set MAKEFUN_OUTPUT_DIR to a writable directory
+
+The smoke run takes `SMOKE_W`/`SMOKE_H` for the viewport and `SMOKE_RENDER` for the one
+quality preset that pays for a real GPU frame (default `low`; it must name exactly one
+of `low`, `med`, `high`, `ultra`). `shots.json` maps each shipped screenshot to the URL
+it was captured from — the `start`, `play` and `end` poses on `?seed=1`, rendered at
+1280×720 and grabbed with Playwright.
 ```
 
 ## Verification performed
