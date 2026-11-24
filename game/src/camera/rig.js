@@ -63,17 +63,20 @@ export class ThirdPersonCameraRig {
     const direction = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     const desired = desiredPivot.clone().addScaledVector(direction, -distance).addScaledVector(right, shoulder);
-    desired.y += .4 + Math.sin(this.pitch) * distance;
+    desired.y += .4 + Math.sin(this.pitch) * distance - (player.vehicle?.braking || 0) * .16;
     desired.y = Math.max(game.world.heightAt(desired.x, desired.z) + .3, desired.y);
+    const cinematicPose = player.vehicle ? game.vehicleCinematic?.pose(dt, player.vehicle, this) : null;
+    if (cinematicPose) { desired.copy(cinematicPose.position); this.mode = 'cinematic'; }
+    const lookTarget = cinematicPose?.target || desiredPivot.clone().addScaledVector(direction, this.aimBlend * 3);
     const boxes = game.world.collision.querySegment(desiredPivot, desired, .24);
     const clipped = castCameraArm(desiredPivot, desired, boxes);
     this.collisionHits = clipped.hits;
     if (!this.initialized) {
-      this.position.set(clipped.x, clipped.y, clipped.z); this.target.copy(desiredPivot);
+      this.position.set(clipped.x, clipped.y, clipped.z); this.target.copy(lookTarget);
       this.previous.copy(this.position); this.previousTarget.copy(this.target); this.initialized = true;
     } else {
       this.position.lerp(new THREE.Vector3(clipped.x, clipped.y, clipped.z), damping(clipped.hits ? 30 : 8.3, dt));
-      this.target.lerp(desiredPivot.clone().addScaledVector(direction, this.aimBlend * 3), damping(16.7, dt));
+      this.target.lerp(lookTarget, damping(16.7, dt));
       const safety = castCameraArm(desiredPivot, this.position, game.world.collision.querySegment(desiredPivot, this.position, .24));
       this.position.set(safety.x, safety.y, safety.z); this.collisionHits += safety.hits;
     }
@@ -84,6 +87,10 @@ export class ThirdPersonCameraRig {
   present(alpha, game) {
     this.camera.position.lerpVectors(this.previous, this.position, alpha);
     const target = new THREE.Vector3().lerpVectors(this.previousTarget, this.target, alpha);
+    if (!game.settings?.reduceMotion && this.trauma > 0) {
+      this.camera.position.x += Math.sin(game.loop.time * 71) * this.trauma * this.trauma * .06;
+      this.camera.position.y += Math.sin(game.loop.time * 89) * this.trauma * this.trauma * .045;
+    }
     // Interpolation itself must not cross a corner after fixed-tick clipping.
     const safe = castCameraArm(this.pivot, this.camera.position, game.world.collision.querySegment(this.pivot, this.camera.position, .24));
     this.camera.position.set(safe.x, safe.y, safe.z);

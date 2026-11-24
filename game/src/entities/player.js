@@ -14,7 +14,7 @@ export class PlayerCharacter {
     this.previous.copy(this.position); this.previousHeading = this.heading;
     const input = game.input;
     if (this.mode !== 'foot') {
-      if (this.vehicle) { this.position.copy(this.vehicle.position); this.heading = this.vehicle.heading; }
+      if (this.vehicle && this.mode === 'driving') { this.position.copy(this.vehicle.position); this.heading = this.vehicle.heading; }
       this.velocity.set(0, 0, 0); this.humanoid.animate(dt, { driving: true }); return;
     }
     const move = input.move, magnitude = Math.min(1, Math.hypot(move.x, move.y));

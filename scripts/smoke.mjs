@@ -46,6 +46,41 @@ try {
   assert.ok(foundation.walls.every(result => !result.cameraInside && result.collisionHits > 0), JSON.stringify(foundation));
   assert.ok(foundation.walkingMetres > 35, JSON.stringify(foundation));
   console.log('Smoke: camera and walking', JSON.stringify(foundation));
+  const driving = await page.evaluate(() => {
+    const game = window.__game;
+    if (!game.vehicles) return null;
+    game.cameraRig.cinematic = false;
+    game.player.teleport(149, .15, -105, 0); game.cameraRig.reset(game.player);
+    game.step(1 / 60, false);
+    const transitions = []; let maxCameraJump = 0, cameraInside = 0;
+    for (let cycle = 0; cycle < 2; cycle++) {
+      for (const expected of ['driving', 'foot']) {
+        const started = game.vehicles.interact();
+        for (let i = 0; i < 30; i++) {
+          const before = game.cameraRig.position.clone(); game.step(1 / 60, false);
+          maxCameraJump = Math.max(maxCameraJump, before.distanceTo(game.cameraRig.position));
+          if (game.world.collision.inside(game.cameraRig.position, .2)) cameraInside++;
+        }
+        transitions.push({ started, expected, actual: game.player.mode });
+      }
+    }
+    game.vehicles.interact();
+    for (let i = 0; i < 30; i++) game.step(1 / 60, false);
+    const startZ = game.player.position.z;
+    game.input.keys.add('KeyW');
+    for (let i = 0; i < 1800; i++) {
+      game.step(1 / 60, false);
+      if (game.world.collision.inside(game.cameraRig.position, .2)) cameraInside++;
+    }
+    game.input.clear(); game.step(0);
+    return { transitions, maxCameraJump, cameraInside, metres: game.player.position.z - startZ,
+      finalSpeed: game.player.vehicle?.speed, gear: game.player.vehicle?.gear, rpm: game.player.vehicle?.rpm };
+  });
+  if (driving) {
+    assert.ok(driving.transitions.every(result => result.started && result.actual === result.expected), JSON.stringify(driving));
+    assert.ok(driving.maxCameraJump < 1 && driving.cameraInside === 0 && driving.metres > 300, JSON.stringify(driving));
+    console.log('Smoke: vehicle route and transitions', JSON.stringify(driving));
+  }
   for (const quality of ['low', 'med', 'high', 'ultra']) {
     await page.evaluate(quality => { window.__game.view.setQuality(quality); window.__game.step(0); }, quality);
     await page.waitForTimeout(400);
@@ -61,5 +96,5 @@ try {
   assert.equal(errors.length, 0, errors.join('\n'));
   assert.equal(warnings.length, 0, warnings.join('\n'));
   assert.ok(result.ticks > 0);
-  console.log(JSON.stringify({ ...result, foundation, consoleErrors: errors.length, consoleWarnings: warnings.length }, null, 2));
+  console.log(JSON.stringify({ ...result, foundation, driving, consoleErrors: errors.length, consoleWarnings: warnings.length }, null, 2));
 } finally { await browser.close(); }

@@ -11,6 +11,8 @@ import { SolmarBayWorld } from './world/city.js';
 import { PlayerCharacter } from './entities/player.js';
 import { ThirdPersonCameraRig } from './camera/rig.js';
 import { CameraDebugOverlay } from './ui/debug.js';
+import { VehicleFleet } from './entities/vehicles.js';
+import { VehicleCinematicDirector } from './camera/vehicle-cinematic.js';
 
 function bootSunsetSyndicate() {
   const params = new URLSearchParams(location.search);
@@ -30,27 +32,41 @@ function bootSunsetSyndicate() {
   game.input = new PlayerInput(document.getElementById('game')); game.input.sensitivity = settings.sensitivity;
   game.player = new PlayerCharacter(game);
   game.cameraRig = new ThirdPersonCameraRig(view.camera, game.player); game.cameraRig.setPreset(settings.cameraPreset);
+  game.vehicles = new VehicleFleet(game, 64);
+  game.heroCar = game.vehicles.spawn('sports', 153, -105, 0);
+  game.vehicleCinematic = new VehicleCinematicDirector();
   if (params.has('debug')) game.debug = new CameraDebugOverlay(game);
   game.registerSystem = (name, update, order = 100) => game.systems.register(name, update, order);
   // Extension order: input 0, vehicles 20, player 30, AI 40, world 50,
   // combat 55, wanted 60, missions 65, camera 80, HUD 100, audio 120.
   game.registerSystem('input', dt => game.input.sampleGamepad(dt), 0);
+  game.registerSystem('vehicle-physics', dt => game.vehicles.updatePhysics(dt), 20);
   game.registerSystem('player', dt => game.player.update(dt, game), 30);
+  game.registerSystem('vehicle-enter-exit', dt => game.vehicles.updateInteraction(dt), 35);
   game.registerSystem('world', dt => game.world.update(dt, game), 50);
   game.registerSystem('third-person-camera', dt => game.cameraRig.update(dt, game), 80);
   game.registerSystem('input-end-tick', () => game.input.endTick(), 1000);
   game.loop = new FixedStepLoop(dt => game.systems.update(dt, game), (alpha, dt) => {
-    game.player.present(alpha); game.cameraRig.present(alpha, game); view.render(dt, game.loop.time);
+    game.player.present(alpha); game.vehicles.present(alpha);
+    game.cameraRig.present(alpha, game); view.render(dt, game.loop.time);
     game.debug?.update();
   });
   game.step = (dt, present = true) => game.loop.step(dt, present);
   game.snapshot = () => ({ seed: game.seed, ticks: game.loop.ticks,
     player: { position: game.player.position.toArray(), heading: game.player.heading, mode: game.player.mode },
     camera: { position: game.cameraRig.position.toArray(), ...game.cameraRig.debug },
+    vehicle: game.player.vehicle ? { position: game.player.vehicle.position.toArray(), speed: game.player.vehicle.speed,
+      gear: game.player.vehicle.gear, rpm: game.player.vehicle.rpm } : null,
     entities: game.entities.count, buildings: game.world.buildings.count });
   game.shots = new DeterministicShotDirector(game);
   game.shots.registerPose('onfoot', g => { g.player.teleport(194, .15, -105, 0); g.world.sky.timeOfDay = 17.2; });
   game.shots.registerPose('boulevard', g => { g.player.teleport(148, .15, -105, 0); g.world.sky.timeOfDay = 17.2; });
+  game.shots.registerHook((name, g) => {
+    if (['boulevard', 'start', 'play'].includes(name)) {
+      g.heroCar.position.set(153, .15, -105); g.heroCar.previous.copy(g.heroCar.position);
+      g.vehicles.seatPlayer(g.heroCar);
+    }
+  });
   window.__game = game;
   document.getElementById('boot-message').classList.add('hidden');
   if (params.has('shot')) game.shots.seek(params.get('shot'));
