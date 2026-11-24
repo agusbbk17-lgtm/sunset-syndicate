@@ -12,7 +12,7 @@ export class SolmarBayWorld {
     this.collision = new WorldCollision();
     this.textures = new ProceduralTextures(rng.fork('textures'));
     this.terrain = buildCoastalTerrain(this.scene);
-    this.roads = buildSolmarRoads(this.scene, this.textures, this.collision);
+    this.roads = buildSolmarRoads(this.scene, this.textures, this.collision, rng.fork('roads'));
     this.buildings = new CityBuildingChunks(this.scene, rng.fork('buildings'), this.textures, this.collision);
     this.props = buildCoastalStreetProps(this.scene, rng.fork('palms'), this.collision);
     this.sky = new SolmarSky(this.scene, view.settings);

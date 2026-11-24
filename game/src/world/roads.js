@@ -1,4 +1,6 @@
 import * as THREE from '../../vendor/three.module.min.js';
+import { addLaneGraphs } from './lanes.js';
+export { signalPhase, walkSignal, SIGNAL_CYCLE } from './lanes.js';
 export const STREET_X = [-620, -500, -380, -260, -140, -20, 160];
 export const STREET_Z = [-660, -540, -420, -300, -180, -60, 60, 180, 300, 420, 540, 660];
 export const LANDMARKS = {
@@ -7,7 +9,7 @@ export const LANDMARKS = {
   'Coral Boardwalk': { x: 210, z: 60 }, 'Paloma Park': { x: -260, z: 420 },
   'Westwind Lookout': { x: -620, z: 540 }, 'Crown Overpass': { x: -20, z: 360 },
 };
-export function createRoadGraph() {
+export function createRoadGraph(seed = 1) {
   const nodes = [], edges = [], lookup = new Map();
   for (const x of STREET_X) for (const z of STREET_Z) {
     const node = { id: nodes.length, x, z, edges: [] }; lookup.set(`${x},${z}`, node); nodes.push(node);
@@ -19,7 +21,7 @@ export function createRoadGraph() {
       length: Math.hypot(dx, dz), speedLimit: node.x === 160 && dx === 0 ? 24 : 16 };
     edges.push(edge); node.edges.push(edge.id);
   }
-  return { nodes, edges, landmarks: LANDMARKS };
+  return addLaneGraphs({ nodes, edges, landmarks: LANDMARKS }, seed);
 }
 export function nearestRoadNode(graph, point) {
   return graph.nodes.reduce((best, node) => Math.hypot(node.x - point.x, node.z - point.z) <
@@ -58,7 +60,7 @@ export function instanceGeometry(scene, geometry, material, entries, shadow = tr
 export function instanceBoxes(scene, material, entries, shadow = true) {
   return instanceGeometry(scene, new THREE.BoxGeometry(1, 1, 1), material, entries, shadow);
 }
-export function buildSolmarRoads(scene, textures, collision) {
+export function buildSolmarRoads(scene, textures, collision, seed = 1) {
   const road = [], pavement = [], paint = [], yellow = [], rail = [];
   for (const x of STREET_X) {
     const width = x === 160 ? 26 : 18;
@@ -81,7 +83,7 @@ export function buildSolmarRoads(scene, textures, collision) {
       paint.push({ x: x + i, y: .1, z: z + side * 12, w: 1, h: .012, d: 4 });
     }
   }
-  instanceBoxes(scene, new THREE.MeshStandardMaterial({ color: '#464a4d', map: textures.asphalt(), roughness: .82 }), road, false);
+  instanceBoxes(scene, new THREE.MeshStandardMaterial({ color: '#e6e8ea', map: textures.asphalt(), roughness: .78 }), road, false);
   instanceBoxes(scene, new THREE.MeshStandardMaterial({ color: '#b8b4a9', roughness: .92 }), pavement, false);
   instanceBoxes(scene, new THREE.MeshStandardMaterial({ color: '#e0ddd0', roughness: .9 }), paint, false);
   instanceBoxes(scene, new THREE.MeshStandardMaterial({ color: '#ddb35a', roughness: .85 }), yellow, false);
@@ -100,5 +102,5 @@ export function buildSolmarRoads(scene, textures, collision) {
   instanceBoxes(scene, new THREE.MeshStandardMaterial({ color: '#b8b9ac', roughness: .8 }), bridge);
   const boardwalk = [{ x: 207, y: .14, z: 0, w: 19, h: .25, d: 1380 }];
   instanceBoxes(scene, new THREE.MeshStandardMaterial({ color: '#b99371', roughness: .86 }), boardwalk, false);
-  return createRoadGraph();
+  return createRoadGraph(seed);
 }
