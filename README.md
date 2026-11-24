@@ -9,7 +9,8 @@ action game: a seeded coastal city of ~1.5 × 1.5 km with downtown towers, a boa
 docks, a park and a highway loop, walked and driven through under a golden-hour sun.
 Everything in it is generated in code at run time — meshes, textures, shaders,
 post-processing and audio. No downloaded models, textures, fonts, music or libraries
-beyond pinned Three.js (MIT, vendored in `game/vendor/`).
+beyond pinned Three.js (MIT, vendored in `game/vendor/`) and make.fun's own hand-in
+library (`vendor/makefun-game.ts`, which the competition's rules require unchanged).
 
 ## What runs today
 
@@ -76,8 +77,9 @@ functional evidence, not hardware performance.
     largest single-frame camera jump 0.497 m, 0 ticks with the arm inside a building,
     835 m driven, car brought to rest in gear 1.
   - Interface, driven through the real DOM: FOV 72, sensitivity 1.4, volume 0.25,
-    camera preset 3 and reduce-motion applied from the sliders, a clicked waypoint
-    routed over 3 road edges, and the pause-menu save landed in `localStorage`.
+    the third camera preset (`Far`) and reduce-motion applied from the controls, a
+    clicked waypoint routed over 3 road edges, and the pause-menu save landed in
+    `localStorage`.
   - Audio: WebAudio context running, engine voice at 140 Hz for 4,200 RPM on 3
     oscillators, ambience, tyre-squeal and footstep voices live, 7 UI blips.
   - **Draw calls on the rendered preset: 11** (75,070 triangles) against the 600
@@ -96,8 +98,14 @@ functional evidence, not hardware performance.
 - **Screenshots** — `screenshots/` holds three real 1280×720 captures of this build,
   taken through `?shot=` poses that settle a fixed tick count, so the same seed renders
   the same frames.
-- **Hand-in** — `MAKEFUN_OUTPUT_DIR=<dir> node main.ts` exits 0 and writes `game/`,
-  `screenshots/` and a `dossier.json` inside the kit's caps.
+- **Hand-in** — `mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts` exits 0 and writes
+  `game/`, `screenshots/` and a 396,739-byte `dossier.json` (three images, schema
+  `makefun/dossier/v1`), inside the scorer's 1.5 MiB cap. Rebuilding that dossier with the
+  kit's own `buildDossier` over the same tree gives the same bytes — sha256 `94c9a7b6…`
+  on both sides — which is what `dossier_matches` compares. `game/` holds 47 files in 10
+  directories, 834,564 bytes, no symlinks, against the 993-entry and 48 MiB caps, and
+  `game/index.html` is 593 bytes. Every screenshot is a whole 1280×720 JPEG under 256 KiB,
+  within the screenshot row's long-side and short-side limits.
 - **Credentials** — every working-tree file and every blob in the commit history was
   scanned against this account's key material and the usual token shapes (GitHub token,
   private-key block, AWS key, bearer header, keypair JSON): **0 matches**.
@@ -114,8 +122,14 @@ identical worlds and identical screenshots.
 
 ## Licence
 
-MIT — see `LICENSE`. Three.js 0.160.0 (MIT) is vendored under `game/vendor/` with its
-notice; no other third-party code or asset is shipped.
+MIT — see `LICENSE`. Two files are not ours and are shipped as their owners hand them out:
+Three.js r160 (`game/vendor/three.module.min.js`, 670,681 bytes, MIT, its `@license` header
+intact) and `vendor/makefun-game.ts`, make.fun's hand-in library, byte for byte the kit
+starter's copy (56,282 bytes, sha256 `dc671875…`). RULES.txt requires that library to stay
+unchanged, so `tests/files.test.mjs` pins its hash and exempts its 1,203 lines from this
+repository's own 500-line limit rather than reflowing it. Every other byte under `game/` —
+source, shaders, CSS, HTML — is written here, and no model, texture, font, audio or data
+file is shipped at all.
 
 ---
 
